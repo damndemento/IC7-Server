@@ -22,6 +22,7 @@
 
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+
 class MyServerCallbacks : public BLEServerCallbacks
 {
     void onConnect(BLEServer *pServer)
@@ -45,6 +46,7 @@ void setup()
 BLECharacteristic *fitnessMachineFeaturesCharacteristic = NULL;
 BLECharacteristic *indoorBikeDataCharacteristic = NULL;
 BLEServer *pServer = NULL;
+
 void setupBluetoothServer()
 {
     Serial.begin(115200);
@@ -79,9 +81,10 @@ void setupBluetoothServer()
     Serial.println("Waiting for a client connection to notify...");
 }
 
-int digitalPin = 32;
-//int digitalPin = 27;
+int digitalPin = 32; // GPIO Pin number for ESP32
+
 bool magStateOld;
+
 void setupHalSensor()
 {
     pinMode(digitalPin, INPUT);
@@ -89,7 +92,6 @@ void setupHalSensor()
     magStateOld = digitalRead(digitalPin);
 }
 
-//incrementRevolutions() used to synchronously update rev rather than using an ISR.
 inline bool positiveEdge(bool state, bool &oldState)
 {
     bool result = (state && !oldState);//latch logic
@@ -100,8 +102,6 @@ inline bool positiveEdge(bool state, bool &oldState)
 double calculateRpmFromRevolutions(int revolutions, unsigned long revolutionsTime)
 {
     double instantaneousRpm = revolutions * 60 * 1000 / revolutionsTime;
-    //    Serial.printf("revolutionsTime: %d, rev: %d , instantaneousRpm: %2.9f \n",
-    //                    revolutionsTime, revolutions, instantaneousRpm);
     return instantaneousRpm;
 }
 
@@ -115,8 +115,6 @@ double calculateKphFromRpm(double rpm)
     double metricDistance = rpm * circumfrence;
     double kph = metricDistance * 60;
     //double mph = kph * KM_TO_MI; 
-                                        //    Serial.printf("rpm: %2.2f, circumfrence: %2.2f, metricDistance %2.5f , imperialDistance: %2.5f, mph: %2.2f \n",
-                                        //                   rpm, circumfrence, metricDistance, imperialDistance, mph);
     return kph;
 }
 
@@ -131,8 +129,6 @@ unsigned long distanceTime = 0;
 double calculateDistanceFromKph(unsigned long distanceTimeSpan, double kph)
 {
     double incrementalDistance = distanceTimeSpan * kph / 60 / 60 / 1000;
-    //    Serial.printf("mph: %2.2f, distanceTimeSpan %d , incrementalDistance: %2.9f \n",
-    //                   mph, distanceTimeSpan, incrementalDistance);
     return incrementalDistance;
 }
 
@@ -176,21 +172,6 @@ double calculateCaloriesFromPower(unsigned long caloriesTimeSpan, double powerv)
     return incrementalCalories;
 }
 
-void indicateRpmWithLight(int rpm)
-{
-    if (rpm > 1)
-    {
-        digitalWrite(LED_BUILTIN, HIGH); // turn the LED on (HIGH is the voltage level)
-    }
-    else
-    {
-        digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
-    }
-}
-
-//Used for debugging, i.e. `printArray(bikeData, sizeof(bikeData));` 
-//NOTE: sizeOfArray parameter is necessary 
-//This is because `sizeOf()` will return the size of the pointer to the array, not the array
 void printArray(byte input[], int sizeOfArray)
 {
     for (size_t i = 0; i < sizeOfArray; i++) 
@@ -222,6 +203,7 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     uint32_t transmittedDistance   = (uint32_t)(runningDistance * 1000); // meters
 
     uint8_t packet1[20];
+
     int i = 0;
     packet1[i++] = flags1 & 0xFF;
     packet1[i++] = (flags1 >> 8) & 0xFF;
@@ -264,6 +246,9 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     packet2[j++] = 0; // energy per minute (unused)
     packet2[j++] = transmittedTime & 0xFF;
     packet2[j++] = transmittedTime >> 8;
+
+    bool disconnecting = !deviceConnected && oldDeviceConnected;
+    bool connecting = deviceConnected && !oldDeviceConnected;
 
     // ---------- Send both packets ----------
     if (deviceConnected) {
@@ -347,8 +332,6 @@ void loop()
         Serial.printf("kph: %2.2f, avgKph: %2.2f \n", kph, avgKph);
         Serial.printf("power: %2.2f watts, avgPower: %2.2f watts \n", power, avgPower);
         Serial.printf("distance: %2.2f, calories: %2.5f \n", runningDistance, runningCalories);
-
-        indicateRpmWithLight(rpm);
 
         // Send FTMS packets
         transmitFTMS(kph, avgKph, cadence, avgCadence, runningDistance, power, runningCalories, avgPower, elapsedTime);
