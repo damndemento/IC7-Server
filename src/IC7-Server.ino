@@ -275,6 +275,21 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
         indoorBikeDataCharacteristic->notify();
         printArray(packet2, j); // Debug
     }
+    
+    if (disconnecting) // give the bluetooth stack the chance to get things ready & restart advertising
+    {
+        delay(500);                  
+        pServer->startAdvertising(); 
+        Serial.println("start advertising");
+        oldDeviceConnected = deviceConnected;
+    }
+    
+    if (connecting) // execute one time notification of supported features
+    { 
+        oldDeviceConnected = deviceConnected;
+        fitnessMachineFeaturesCharacteristic->setValue((byte*)&features, 4);
+        fitnessMachineFeaturesCharacteristic->notify();
+    }
 }
 
 unsigned long elapsedTime = 0;
