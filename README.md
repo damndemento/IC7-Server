@@ -8,29 +8,29 @@ I used platformio plugin for VSCode to compile and upload the firmware to a [D1 
 I added two 1k resistors:
   one soldered to GPIO27 and one to the GND next to it to avoid breaking the board.
 
-![resistor pins](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/D1_resistor_pins.jpg)
+![resistor pins](https://github.com/damndemento/IC7-Server/blob/main/D1_resistor_pins.jpg)
 
 Then I splitted a 0.5m mono cable with 3.5mm jack into half
 
-![mono cable](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/3.5mm_mono_extension_cable.jpg)
+![mono cable](https://github.com/damndemento/IC7-Server/blob/main/3.5mm_mono_extension_cable.jpg)
 
 *!!! MAKE SURE TO USE A CABLE WITH ONE MALE AND ONE FEMALE PLUG !!!*
 
 and drilled the wires together and soldered them to the resistors on the board.
 
-![resistors](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/D1_resistors.jpg)
+![resistors](https://github.com/damndemento/IC7-Server/blob/main/D1_resistors.jpg)
 
 This is how it looks like
 
-![D1 cables](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/D1_with_cables.jpg)
+![D1 cables](https://github.com/damndemento/IC7-Server/blob/main/D1_with_cables.jpg)
 
 Then you can connect it to your bike without harming the IC7
 
-![IC7 cables](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/IC7_cable.jpg)
+![IC7 cables](https://github.com/damndemento/IC7-Server/blob/main/IC7_cable.jpg)
 
 just disconnect the display from the sensor and plug the D1 mini ESP32 in between - et voilá - your IC7 speaks FTMS now.
 
-![D1 connected](https://github.com/damndemento/esp32-ftms-server-ic7/blob/main/D1_connected.jpg)
+![D1 connected](https://github.com/damndemento/IC7-Server/blob/main/D1_connected.jpg)
 
 Ready to connect to Zwift, WahooRGT or similar...
 
