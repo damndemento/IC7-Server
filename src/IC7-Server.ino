@@ -81,7 +81,7 @@ void setupBluetoothServer()
     Serial.println("Waiting for a client connection to notify...");
 }
 
-int digitalPin = 32; // GPIO Pin number for ESP32
+int digitalPin = 27; // GPIO Pin number for ESP32 (or gpio32)
 
 bool magStateOld;
 
@@ -325,6 +325,8 @@ void loop()
         double avgKph     = (intervalEntries > 0) ? totalKph / intervalEntries : 0;
         double avgPower   = (intervalEntries > 0) ? totalPower / intervalEntries : 0;
 
+        // Serial Debug Printout
+        /*
         Serial.println("\n----------------------------------------------------");
         Serial.printf("elapsedTime: %lu, rev: %d \n", elapsedTime, rev);
         Serial.printf("rpm: %2.2f, avgRpm: %2.2f \n", rpm, avgRpm);
@@ -332,7 +334,8 @@ void loop()
         Serial.printf("kph: %2.2f, avgKph: %2.2f \n", kph, avgKph);
         Serial.printf("power: %2.2f watts, avgPower: %2.2f watts \n", power, avgPower);
         Serial.printf("distance: %2.2f, calories: %2.5f \n", runningDistance, runningCalories);
-
+        */
+        
         // Send FTMS packets
         transmitFTMS(kph, avgKph, cadence, avgCadence, runningDistance, power, runningCalories, avgPower, elapsedTime);
 
