@@ -84,6 +84,10 @@ void setupBluetoothServer()
 int digitalPin = 27; // GPIO Pin number for ESP32 (or gpio32)
 
 bool magStateOld;
+unsigned long distanceTime = 0;
+double tireValues[] = {0.005, 0.004, 0.012};                      //Clincher, Tubelar, MTB
+double aeroValues[] = {0.388, 0.445, 0.420, 0.300, 0.233, 0.200}; //Hoods, Bartops, Barends, Drops, Aerobar
+unsigned long caloriesTime = 0;
 
 void setupHalSensor()
 {
@@ -114,8 +118,9 @@ double calculateKphFromRpm(double rpm)
     double circumfrence = 2 * PI * WHEEL_RADIUS;
     double metricDistance = rpm * circumfrence;
     double kph = metricDistance * 60;
-    //double mph = kph * KM_TO_MI; 
     return kph;
+    //double mph = kph * KM_TO_MI;
+    //return mph;
 }
 
 double calculateCadenceFromRpm(double rpm)
@@ -125,16 +130,12 @@ double calculateCadenceFromRpm(double rpm)
     return cadence;
 }
 
-unsigned long distanceTime = 0;
 double calculateDistanceFromKph(unsigned long distanceTimeSpan, double kph)
 {
     double incrementalDistance = distanceTimeSpan * kph / 60 / 60 / 1000;
     return incrementalDistance;
 }
 
-double tireValues[] = {0.005, 0.004, 0.012};                      //Clincher, Tubelar, MTB
-double aeroValues[] = {0.388, 0.445, 0.420, 0.300, 0.233, 0.200}; //Hoods, Bartops, Barends, Drops, Aerobar
-unsigned long caloriesTime = 0;
 double calculatePowerFromKph(double kph)
 {
     //double velocity = mph * 0.44704; // translates to meters/second
