@@ -210,12 +210,12 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     EnergyData energy = calculateEnergy(runningCalories, elapsedTime);
     // ---------- Packet 1: Speed, Cadence, Distance, Power, Time, Energy ----------
     uint16_t flags1 = 0;
-    flags1 |= (1 << 2);   // instantaneous cadence
-    flags1 |= (1 << 4);   // total distance
-    flags1 |= (1 << 6);   // instantaneous power
-    flags1 |= (1 << 8);   // expended energy
-    flags1 |= (1 << 11);  // elapsed time
-    // MD = 0, so instantaneous speed MUST be present
+    flags1 |= (1 << 1);  // instantaneous speed (mandatory)
+    flags1 |= (1 << 2);  // instantaneous cadence
+    flags1 |= (1 << 4);  // total distance
+    flags1 |= (1 << 6);  // instantaneous power
+    flags1 |= (1 << 8);  // expended energy
+    flags1 |= (1 << 11); // elapsed time
 
     uint16_t transmittedKph        = (uint16_t)(kph * 100);       // 0.01 km/h
     uint16_t transmittedCadence    = (uint16_t)(cadence * 2);     // 0.5 rpm resolution
