@@ -103,6 +103,25 @@ inline bool positiveEdge(bool state, bool &oldState)
     return result;
 }
 
+struct EnergyData {
+    uint16_t totalEnergy;     // cumulative kJ
+    uint16_t energyPerHour;   // kJ/h
+    uint8_t  energyPerMinute; // kJ/min
+};
+
+EnergyData calculateEnergy(double runningCalories, unsigned long intervalMs) {
+    EnergyData e;
+    e.totalEnergy = (uint16_t)(runningCalories * 4.184); // kcal → kJ
+
+    double intervalHours = intervalMs / 3600000.0;
+    double intervalMinutes = intervalMs / 60000.0;
+
+    e.energyPerHour = (uint16_t)((runningCalories * 4.184) / intervalHours);
+    e.energyPerMinute = (uint8_t)((runningCalories * 4.184) / intervalMinutes);
+
+    return e;
+}
+
 double calculateRpmFromRevolutions(int revolutions, unsigned long revolutionsTime)
 {
     double instantaneousRpm = revolutions * 60 * 1000 / revolutionsTime;
@@ -182,76 +201,92 @@ void printArray(byte input[], int sizeOfArray)
     }
 }
 
-byte features[] = {0x07,0x52,0x00,0x00}; 
-// 0x07,0x52 (0x48,0x4a in big-endian) are flags for
-// avgSpeed (0), cadence (1), total distance (2), expended energy (9), elapsed time (12), power measurement (14)
+byte features[] = { 0x4F, 0x48, 0x00, 0x00 }; // little endian
+
 void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
                   double runningDistance, double power, double runningCalories,
                   double avgPower, unsigned long elapsedTime)
 {
-    // ---------- Packet 1: Speed, Cadence, Distance ----------
+    EnergyData energy = calculateEnergy(runningCalories, elapsedTime);
+    // ---------- Packet 1: Speed, Cadence, Distance, Power, Time, Energy ----------
     uint16_t flags1 = 0;
-    flags1 |= (1 << 0); // instantaneous speed
-    flags1 |= (1 << 1); // average speed
-    flags1 |= (1 << 2); // instantaneous cadence
-    flags1 |= (1 << 3); // average cadence
-    flags1 |= (1 << 4); // total distance
+    flags1 |= (1 << 2);   // instantaneous cadence
+    flags1 |= (1 << 4);   // total distance
+    flags1 |= (1 << 6);   // instantaneous power
+    flags1 |= (1 << 8);   // expended energy
+    flags1 |= (1 << 11);  // elapsed time
+    // MD = 0, so instantaneous speed MUST be present
 
     uint16_t transmittedKph        = (uint16_t)(kph * 100);       // 0.01 km/h
-    uint16_t transmittedAvgKph     = (uint16_t)(avgKph * 100);
     uint16_t transmittedCadence    = (uint16_t)(cadence * 2);     // 0.5 rpm resolution
-    uint16_t transmittedAvgCadence = (uint16_t)(avgCadence * 2);
     uint32_t transmittedDistance   = (uint32_t)(runningDistance * 1000); // meters
+    uint16_t transmittedPower      = (uint16_t)power;             // watts
+    uint16_t transmittedCalories = (uint16_t)(runningCalories * 4.184); // kcal → kJ
+    uint16_t transmittedTime       = (uint16_t)(elapsedTime / 1000); // seconds
 
     uint8_t packet1[20];
-
     int i = 0;
     packet1[i++] = flags1 & 0xFF;
     packet1[i++] = (flags1 >> 8) & 0xFF;
+
     packet1[i++] = transmittedKph & 0xFF;
     packet1[i++] = transmittedKph >> 8;
-    packet1[i++] = transmittedAvgKph & 0xFF;
-    packet1[i++] = transmittedAvgKph >> 8;
+
     packet1[i++] = transmittedCadence & 0xFF;
     packet1[i++] = transmittedCadence >> 8;
-    packet1[i++] = transmittedAvgCadence & 0xFF;
-    packet1[i++] = transmittedAvgCadence >> 8;
+
     packet1[i++] = transmittedDistance & 0xFF;
     packet1[i++] = (transmittedDistance >> 8) & 0xFF;
     packet1[i++] = (transmittedDistance >> 16) & 0xFF;
 
-    // ---------- Packet 2: Power, Energy, Elapsed Time ----------
-    uint16_t flags2 = 0;
-    flags2 |= (1 << 6);  // instantaneous power
-    flags2 |= (1 << 7);  // average power
-    flags2 |= (1 << 9);  // expended energy
-    flags2 |= (1 << 12); // elapsed time
+    packet1[i++] = transmittedPower & 0xFF;
+    packet1[i++] = transmittedPower >> 8;
 
-    uint16_t transmittedPower      = (uint16_t)power;       // watts
+    packet1[i++] = transmittedTime & 0xFF;
+    packet1[i++] = transmittedTime >> 8;
+
+    packet1[i++] = transmittedCalories & 0xFF;   // Total Energy
+    packet1[i++] = transmittedCalories >> 8;
+    packet1[i++] = 0;                            // Energy per Hour (LSB)
+    packet1[i++] = 0;                            // Energy per Hour (MSB)
+    packet1[i++] = 0;                            // Energy per Minute (1B)
+
+
+    // ---------- Packet 2: Averages only (Continuation) ----------
+    uint16_t flags2 = 0;
+    flags2 |= (1 << 0);  // More Data = 1 (continuation)
+    flags2 |= (1 << 1);  // average speed
+    flags2 |= (1 << 3);  // average cadence
+    flags2 |= (1 << 7);  // average power
+
+    uint16_t transmittedAvgKph     = (uint16_t)(avgKph * 100);
+    uint16_t transmittedAvgCadence = (uint16_t)(avgCadence * 2);
     uint16_t transmittedAvgPower   = (uint16_t)avgPower;
-    uint16_t transmittedCalories   = (uint16_t)runningCalories;  // kcal
-    uint16_t transmittedTime       = (uint16_t)(elapsedTime / 1000); // seconds
 
     uint8_t packet2[20];
     int j = 0;
     packet2[j++] = flags2 & 0xFF;
     packet2[j++] = (flags2 >> 8) & 0xFF;
-    packet2[j++] = transmittedPower & 0xFF;
-    packet2[j++] = transmittedPower >> 8;
+
+    packet2[j++] = transmittedAvgKph & 0xFF;
+    packet2[j++] = transmittedAvgKph >> 8;
+
+    packet2[j++] = transmittedAvgCadence & 0xFF;
+    packet2[j++] = transmittedAvgCadence >> 8;
+
     packet2[j++] = transmittedAvgPower & 0xFF;
     packet2[j++] = transmittedAvgPower >> 8;
-    packet2[j++] = transmittedCalories & 0xFF;
-    packet2[j++] = transmittedCalories >> 8;
-    packet2[j++] = 0; // energy per hour (unused)
-    packet2[j++] = 0;
-    packet2[j++] = 0; // energy per minute (unused)
-    packet2[j++] = transmittedTime & 0xFF;
-    packet2[j++] = transmittedTime >> 8;
 
+    packet2[j++] = energyPerHour & 0xFF;
+    packet2[j++] = energyPerHour >> 8;
+    
+    packet2[j++] = energyPerMinute & 0xFF;
+
+
+    // ---------- Connection Handling ----------
     bool disconnecting = !deviceConnected && oldDeviceConnected;
     bool connecting = deviceConnected && !oldDeviceConnected;
 
-    // ---------- Send both packets ----------
     if (deviceConnected) {
         indoorBikeDataCharacteristic->setValue(packet1, i);
         indoorBikeDataCharacteristic->notify();
