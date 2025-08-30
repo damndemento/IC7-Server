@@ -339,7 +339,7 @@ void loop()
         elapsedSampleTime = millis();
     }
 
-    if (rev >= 2) 
+    if (rev >= 2 || intervalTime > 1000) 
     {
         double rpm = calculateRpmFromRevolutions(rev, intervalTime);
         double cadence = calculateCadenceFromRpm(rpm);
