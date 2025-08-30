@@ -36,6 +36,12 @@ class MyServerCallbacks : public BLEServerCallbacks
     }
 };
 
+struct EnergyData {
+    uint16_t totalEnergy;     // cumulative kJ
+    uint16_t energyPerHour;   // kJ/h
+    uint8_t  energyPerMinute; // kJ/min
+};
+
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT); // initialize digital pin LED_BUILTIN as an output.
@@ -102,12 +108,6 @@ inline bool positiveEdge(bool state, bool &oldState)
     oldState = state;
     return result;
 }
-
-struct EnergyData {
-    uint16_t totalEnergy;     // cumulative kJ
-    uint16_t energyPerHour;   // kJ/h
-    uint8_t  energyPerMinute; // kJ/min
-};
 
 EnergyData calculateEnergy(double runningCalories, unsigned long intervalMs) {
     EnergyData e;
