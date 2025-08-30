@@ -221,7 +221,7 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     uint16_t transmittedCadence    = (uint16_t)(cadence * 2);     // 0.5 rpm resolution
     uint32_t transmittedDistance   = (uint32_t)(runningDistance * 1000); // meters
     uint16_t transmittedPower      = (uint16_t)power;             // watts
-    uint16_t transmittedCalories = (uint16_t)(runningCalories * 4.184); // kcal → kJ
+    uint16_t totalEnergy           = energy.totalEnergy;  // optional, if you want consistent naming
     uint16_t transmittedTime       = (uint16_t)(elapsedTime / 1000); // seconds
 
     uint8_t packet1[20];
@@ -245,8 +245,8 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     packet1[i++] = transmittedTime & 0xFF;
     packet1[i++] = transmittedTime >> 8;
 
-    packet1[i++] = transmittedCalories & 0xFF;   // Total Energy
-    packet1[i++] = transmittedCalories >> 8;
+    packet1[i++] = totalEnergy & 0xFF;
+    packet1[i++] = totalEnergy >> 8;
     packet1[i++] = 0;                            // Energy per Hour (LSB)
     packet1[i++] = 0;                            // Energy per Hour (MSB)
     packet1[i++] = 0;                            // Energy per Minute (1B)
@@ -262,6 +262,8 @@ void transmitFTMS(double kph, double avgKph, double cadence, double avgCadence,
     uint16_t transmittedAvgKph     = (uint16_t)(avgKph * 100);
     uint16_t transmittedAvgCadence = (uint16_t)(avgCadence * 2);
     uint16_t transmittedAvgPower   = (uint16_t)avgPower;
+    uint16_t energyPerHour = energy.energyPerHour;
+    uint8_t  energyPerMinute = energy.energyPerMinute;
 
     uint8_t packet2[20];
     int j = 0;
